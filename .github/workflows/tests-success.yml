@@ -1,0 +1,143 @@
+---
+
+name: Tests Success
+
+on:
+  push:
+    branches:
+      - master
+
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  defaults:
+    runs-on: ubuntu-latest
+
+    strategy:
+      max-parallel: 4
+      matrix:
+        checksum_output:
+          - one_file
+          - one_file_per_digest
+          - artifact_one_file
+          - artifact_one_file_per_digest
+        sign_output:
+          - checksum_detach
+          - checksum_clear
+          - artifact_detach
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Create Data
+        id: zip_sum
+        run: |
+          mkdir build
+          cd build/
+          echo AAA > AAA.txt
+          echo BBB > BBB.txt
+          zip -j build.zip *.txt
+          echo "::set-output name=ZIP_SHA256SUM::$(sha256sum build.zip)"
+          echo "::set-output name=ZIP_SHA512SUM::$(sha512sum build.zip)"
+
+      - name: Start Github Action
+        id: checksum_sign
+        uses: ./
+        with:
+          path: 'build/*.zip'
+          checksum_digests: 'sha256,sha512'
+          checksum_output: '${{ matrix.checksum_output }}'
+          sign_key: '${{ secrets.FAKE_VALID_SIGN_KEY }}'
+          sign_key_passphrase: '${{ secrets.FAKE_VALID_SIGN_KEY_PASSPHRASE }}'
+          sign_key_fingerprint: '6F255CD2EF54ECC6C10EADEF8898CF4197CA3026'
+          sign_keyserver: 'keys.openpgp.org'
+          sign_output: '${{ matrix.sign_output }}'
+
+      - name: Check
+        env:
+          TEST_ZIP_SHA256SUM: '${{ steps.zip_sum.outputs.ZIP_SHA256SUM }}'
+          TEST_ZIP_SHA512SUM: '${{ steps.zip_sum.outputs.ZIP_SHA512SUM }}'
+          TEST_GENERATED: '${{ steps.checksum_sign.outputs.generated-files }}'
+          TEST_SIGN_OUTPUT: '${{ matrix.sign_output }}'
+          TEST_CHECKSUM_OUTPUT: '${{ matrix.checksum_output }}'
+          TEST_SIGN_KEYSERVER: 'keys.openpgp.org'
+          TEST_SIGN_FINGERPRINT: '6F255CD2EF54ECC6C10EADEF8898CF4197CA3026'
+        run: |
+          ./tests/success_defaults.sh
+
+  bsd-sign-artifact:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Create Data
+        id: zip_sum
+        run: |
+          mkdir build
+          cd build/
+          echo AAA > AAA.txt
+          echo BBB > BBB.txt
+          zip -j build.zip *.txt
+          echo "::set-output name=ZIP_SHA256SUM::$(sha256sum build.zip)"
+          echo "::set-output name=ZIP_SHA512SUM::$(sha512sum build.zip)"
+
+      - name: Start Github Action
+        id: checksum_sign
+        uses: ./
+        with:
+          path: 'build/*.zip'
+          checksum_digests: 'sha256,sha512'
+          checksum_format: 'bsd'
+          checksum_output: 'one_file'
+          sign_key: '${{ secrets.FAKE_VALID_SIGN_KEY }}'
+          sign_key_passphrase: '${{ secrets.FAKE_VALID_SIGN_KEY_PASSPHRASE }}'
+          sign_key_fingerprint: '6F255CD2EF54ECC6C10EADEF8898CF4197CA3026'
+          sign_keyserver: 'keys.openpgp.org'
+          sign_output: 'artifact_detach'
+
+      - name: Check
+        env:
+          TEST_ZIP_SHA256SUM: '${{ steps.zip_sum.outputs.ZIP_SHA256SUM }}'
+          TEST_ZIP_SHA512SUM: '${{ steps.zip_sum.outputs.ZIP_SHA512SUM }}'
+          TEST_SIGN_KEYSERVER: 'keys.openpgp.org'
+          TEST_SIGN_FINGERPRINT: '6F255CD2EF54ECC6C10EADEF8898CF4197CA3026'
+        run: |
+          ./tests/success_bsd_sign_artifact.sh
+
+  checksum-only:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Create Data
+        id: zip_sum
+        run: |
+          mkdir build
+          cd build/
+          echo AAA > AAA.txt
+          echo BBB > BBB.txt
+          zip -j build.zip *.txt
+          echo "::set-output name=ZIP_SHA256SUM::$(sha256sum build.zip)"
+          echo "::set-output name=ZIP_SHA512SUM::$(sha512sum build.zip)"
+
+      - name: Start Github Action
+        id: checksum_sign
+        uses: ./
+        with:
+          path: 'build/*.zip'
+          checksum_digests: 'sha256,sha512'
+          checksum_output: 'one_file'
+
+      - name: Check
+        env:
+          TEST_ZIP_SHA256SUM: '${{ steps.zip_sum.outputs.ZIP_SHA256SUM }}'
+          TEST_ZIP_SHA512SUM: '${{ steps.zip_sum.outputs.ZIP_SHA512SUM }}'
+        run: |
+          ./tests/success_checksum_only.sh

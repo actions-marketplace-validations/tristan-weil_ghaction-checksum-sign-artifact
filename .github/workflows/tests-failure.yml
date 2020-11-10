@@ -1,0 +1,50 @@
+---
+
+name: Tests Failure
+
+on:
+  push:
+    branches:
+      - master
+
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  wrong-pubkey:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Create Data
+        id: zip_sha256sum
+        run: |
+          mkdir build
+          cd build/
+          echo AAA > AAA.txt
+          echo BBB > BBB.txt
+          zip -j build.zip *.txt
+          echo "::set-output name=ZIP_SHA256SUM::$(sha256sum build.zip)"
+
+      - name: Start Github Action
+        uses: ./
+        with:
+          path: 'build/*.zip'
+          checksum_digests: 'sha256'
+          checksum_output: 'one_file'
+          sign_key: '${{ secrets.FAKE_VALID_SIGN_KEY }}'
+          sign_key_passphrase: '${{ secrets.FAKE_VALID_SIGN_KEY_PASSPHRASE }}'
+          sign_key_fingerprint: '6F255CD2EF54ECC6C10EADEF8898CF4197CA3026'
+          sign_keyserver: 'keys.openpgp.org'
+          sign_output: 'checksum_detach'
+
+      - name: Check Wrong Public Key
+        env:
+          TEST_ZIP_SHA256SUM: '${{ steps.zip_sha256sum.outputs.ZIP_SHA256SUM }}'
+          TEST_SIGN_KEYSERVER: 'keys.openpgp.org'
+          TEST_SIGN_FINGERPRINT: '8DEF00BD77CD5621C34341A8E1322DEDABFA1838'
+        run: |
+          ./tests/failure_wrong_pubkey.sh

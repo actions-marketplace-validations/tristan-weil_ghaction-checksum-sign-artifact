@@ -1,0 +1,56 @@
+name: 'ghaction-checksum-sign-artifact'
+description: 'Add checksums to your artifacts and sign them using the OpenPGP standard'
+author: 'tristan-weil'
+branding:
+  icon: 'lock'
+  color: 'blue'
+
+inputs:
+  path:
+    description : 'Path to the artifact(s)'
+    required: true
+
+  checksum_digests:
+    description: 'List of digests functions, comma separated (allowed values: sha256, sha512)'
+    default: 'sha256'
+    required: false
+
+  checksum_format:
+    description: 'Format of each digest''s line. (allowed values: gnu, bsd)'
+    default: 'gnu'
+    required: false
+
+  checksum_output:
+    description: 'Output method to store the digest(s) (allowed values: one_file, one_file_per_digest, artifact_one_file, artifact_one_file_per_digest)'
+    default: 'one_file_per_digest'
+    required: false
+
+  sign_key:
+    description: 'Key used to sign the artifact(s)'
+    required: false
+
+  sign_key_passphrase:
+    description: 'Passphrase to unlock the key'
+    required: false
+
+  sign_key_fingerprint:
+    description: 'Fingerprint used to find the public key of the signing key in the keyserver, in order to validate the newly created signatures'
+    required: false
+
+  sign_keyserver:
+    description: 'Keyserver where the fingerprint is stored'
+    default: 'keys.openpgp.org'
+    required: false
+
+  sign_output:
+    description: 'Output method to store the signature(s) (allowed values: checksum_detach, checksum_clear, artifact_detach)'
+    default: 'checksum_detach'
+    required: false
+
+outputs:
+  generated-files:
+    description: 'List of generated files'
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
