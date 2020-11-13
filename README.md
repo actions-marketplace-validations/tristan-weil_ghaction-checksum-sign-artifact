@@ -97,6 +97,10 @@ List of generated files (new lines are escaped with %0A so it can be used in ano
       sign_key_fingerprint: 'ABCD1234'
       sign_keyserver: 'keys.openpgp.org'
 
+Output Sample:
+
+![Output Sample](ghaction-sample.png)
+
 ## Caveats
 
 The `busybox` version of the sha(256|512)sum commands does not support:
