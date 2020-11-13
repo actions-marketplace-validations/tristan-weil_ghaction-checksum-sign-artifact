@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-set + x
+set +x
 set -o errexit
 
 GPG="gpg --quiet --no-tty --batch --pinentry-mode loopback"
